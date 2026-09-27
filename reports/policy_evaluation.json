@@ -1,0 +1,165 @@
+{
+  "cases": 15,
+  "passed": 15,
+  "accuracy": 1.0,
+  "rows": [
+    {
+      "name": "payment_gateway_multi_tool",
+      "expected_tools": [
+        "metrics",
+        "logs",
+        "knowledge"
+      ],
+      "actual_tools": [
+        "metrics",
+        "logs",
+        "knowledge"
+      ],
+      "match": true
+    },
+    {
+      "name": "metrics_only",
+      "expected_tools": [
+        "metrics"
+      ],
+      "actual_tools": [
+        "metrics"
+      ],
+      "match": true
+    },
+    {
+      "name": "logs_only",
+      "expected_tools": [
+        "logs"
+      ],
+      "actual_tools": [
+        "logs"
+      ],
+      "match": true
+    },
+    {
+      "name": "knowledge_only",
+      "expected_tools": [
+        "knowledge"
+      ],
+      "actual_tools": [
+        "knowledge"
+      ],
+      "match": true
+    },
+    {
+      "name": "sql_total_orders",
+      "expected_tools": [
+        "sql"
+      ],
+      "actual_tools": [
+        "sql"
+      ],
+      "match": true
+    },
+    {
+      "name": "sql_failed_orders",
+      "expected_tools": [
+        "sql"
+      ],
+      "actual_tools": [
+        "sql"
+      ],
+      "match": true
+    },
+    {
+      "name": "metrics_and_logs",
+      "expected_tools": [
+        "metrics",
+        "logs"
+      ],
+      "actual_tools": [
+        "metrics",
+        "logs"
+      ],
+      "match": true
+    },
+    {
+      "name": "logs_and_knowledge",
+      "expected_tools": [
+        "logs",
+        "knowledge"
+      ],
+      "actual_tools": [
+        "logs",
+        "knowledge"
+      ],
+      "match": true
+    },
+    {
+      "name": "unsupported_weather",
+      "expected_tools": [],
+      "actual_tools": [],
+      "match": true
+    },
+    {
+      "name": "github_current_status",
+      "expected_tools": [
+        "status"
+      ],
+      "actual_tools": [
+        "status"
+      ],
+      "match": true
+    },
+    {
+      "name": "github_latest_incident",
+      "expected_tools": [
+        "incidents"
+      ],
+      "actual_tools": [
+        "incidents"
+      ],
+      "match": true
+    },
+    {
+      "name": "github_incident_metrics",
+      "expected_tools": [
+        "incident_metrics"
+      ],
+      "actual_tools": [
+        "incident_metrics"
+      ],
+      "match": true
+    },
+    {
+      "name": "github_actions_incidents",
+      "expected_tools": [
+        "incidents"
+      ],
+      "actual_tools": [
+        "incidents"
+      ],
+      "match": true
+    },
+    {
+      "name": "github_status_and_metrics",
+      "expected_tools": [
+        "status",
+        "incident_metrics"
+      ],
+      "actual_tools": [
+        "status",
+        "incident_metrics"
+      ],
+      "match": true
+    },
+    {
+      "name": "github_status_and_latest_incident",
+      "expected_tools": [
+        "status",
+        "incidents"
+      ],
+      "actual_tools": [
+        "status",
+        "incidents"
+      ],
+      "match": true
+    }
+  ]
+}

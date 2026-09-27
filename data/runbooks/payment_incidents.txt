@@ -1,0 +1,34 @@
+PAYMENT GATEWAY TIMEOUT
+
+Symptom:
+Checkout requests fail with PaymentGatewayTimeout errors.
+
+Possible causes:
+- High latency from the external payment provider
+- Temporary network connectivity problems
+- Payment service overload
+
+Recommended investigation:
+1. Check payment API latency.
+2. Check payment error rate.
+3. Search application logs for PaymentGatewayTimeout.
+4. Confirm whether multiple orders are affected.
+
+Recommended remediation:
+- Retry failed payment requests where appropriate.
+- Check the external payment provider status.
+- Escalate to the payment service team if elevated errors continue.
+
+CONNECTION TIMEOUT
+
+Symptom:
+Checkout requests fail with ConnectionTimeout errors.
+
+Recommended investigation:
+1. Check network connectivity to the payment service.
+2. Search application logs for ConnectionTimeout.
+3. Confirm whether multiple orders are affected.
+
+Recommended remediation:
+- Retry the request where appropriate.
+- Escalate persistent connectivity failures to the platform team.

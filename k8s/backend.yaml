@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agentops-backend
+  namespace: agentops
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: agentops-backend
+  template:
+    metadata:
+      labels:
+        app: agentops-backend
+    spec:
+      containers:
+        - name: backend
+          image: agentops-local-backend:latest
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: agentops-config
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_PASSWORD
+            - name: DATABASE_URL
+              value: postgresql+psycopg://agentops:$(POSTGRES_PASSWORD)@postgres:5432/agentops
+          ports:
+            - containerPort: 8000
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: agentops-backend
+  namespace: agentops
+spec:
+  selector:
+    app: agentops-backend
+  ports:
+    - port: 8000
+      targetPort: 8000

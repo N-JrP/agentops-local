@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+      - name: Lint
+        run: ruff check backend tests frontend
+      - name: Tests
+        run: pytest -q
+      - name: Offline agent policy evaluation
+        run: python -m backend.evaluation.run_policy_evaluation
+
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build backend image
+        run: docker build -t agentops-local-backend:ci .
+      - name: Build Streamlit image
+        run: docker build -f Dockerfile.streamlit -t agentops-local-ui:ci .
