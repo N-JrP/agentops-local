@@ -1,283 +1,243 @@
-# AgentOps Local — Live Incident Investigation Agent
+# AgentOps Local
 
-AgentOps Local is a **local-first, zero-paid-API AI incident investigation system**. It combines a local Ollama model with LangGraph orchestration, real public GitHub Status evidence, deterministic safety/grounding controls, persistence, MCP, observability, CI, Docker, and local Kubernetes assets.
+**Local-first AI incident investigation, grounded in evidence.**
 
-The portfolio/demo path fetches live data at runtime from:
+AgentOps Local is a production-style portfolio system for investigating real public GitHub service incidents. It uses LangGraph to plan read-only tool calls, the GitHub Status API as the primary live evidence source, Ollama (`qwen2.5-coder:7b`) for local synthesis, and deterministic validation before returning an answer.
+
+No paid model API is required.
+
+<p align="center">
+  <img src="docs/screenshots/01_agentops_hero.png" alt="AgentOps Local project showcase" width="100%" />
+</p>
+
+**Stack:** LangGraph · Ollama · FastAPI · Streamlit · MCP · SQLite/PostgreSQL · OpenTelemetry · Prometheus · Grafana · Jaeger · Docker · kind/Kubernetes · GitHub Actions
+
+> **Scope:** this is a production-style **local** portfolio system, not a cloud-hosted production service. The static site under `docs/` can be published with GitHub Pages; the full LangGraph + Ollama runtime remains local.
+
+## What the system demonstrates
+
+- **Live evidence ingestion** from the public GitHub Status API
+- **Structured agent orchestration** with LangGraph, Pydantic plans, minimal tool selection, retries and recovery
+- **Grounded local synthesis** with Ollama rather than a paid cloud LLM API
+- **Deterministic validation** for grounding, identifiers, unsupported numeric/source claims and answer completeness
+- **Read-only tool safety** with centralized schemas, permissions and input validation
+- **Persistence** for investigations, tool traces, sessions and evaluations using SQLite or PostgreSQL
+- **Multiple interfaces** through FastAPI, Streamlit and MCP
+- **Observability** with investigation/tool/LLM timings, token metadata, Prometheus metrics and OpenTelemetry traces
+- **Deployment assets** for Docker Compose and local kind/Kubernetes
+- **Deterministic evaluation** plus a separate live-source verification path
+
+## How an investigation works
+
+1. A user asks an operational question.
+2. A security preflight checks for direct prompt/tool-policy bypass patterns.
+3. A deterministic policy selects the minimum known tools for common intents; the LLM planner is used where structured planning is needed.
+4. LangGraph executes the plan, records tool status/timing and retries transient failures.
+5. Evidence is accumulated with provenance such as `source`, `source_url` and `fetched_at`.
+6. Local Ollama synthesizes an answer from the collected evidence.
+7. A deterministic validator checks grounding and completeness.
+8. Invalid output can be regenerated; unresolved cases use deterministic fallback and/or a human-review flag.
+9. Investigation, execution trace and observability data are persisted and exposed through the interfaces.
+
+<p align="center">
+  <img src="docs/screenshots/07_system_architecture.png" alt="AgentOps Local system architecture" width="100%" />
+</p>
+
+More detail: [`docs/architecture.md`](docs/architecture.md) · [`docs/agent-flow.md`](docs/agent-flow.md)
+
+## Real investigation walkthrough
+
+The portfolio path queries the real public GitHub Status API at runtime. Local checkout logs, metrics, SQL data and runbook content are kept only as deterministic regression fixtures and are presented separately from live evidence.
+
+**1. Ask a real incident question**
+
+<p align="center">
+  <img src="docs/screenshots/02_real_investigation_query.png" alt="Real GitHub incident investigation query" width="100%" />
+</p>
+
+**2. Inspect the tool execution trace**
+
+<p align="center">
+  <img src="docs/screenshots/03_execution_trace.png" alt="Agent execution trace" width="100%" />
+</p>
+
+**3. Review the live evidence separately from local fixtures**
+
+<p align="center">
+  <img src="docs/screenshots/04_live_github_evidence.png" alt="Live GitHub Status evidence" width="100%" />
+</p>
+
+**4. Validate the final grounded answer**
+
+<p align="center">
+  <img src="docs/screenshots/05_validated_answer.png" alt="Validated grounded answer" width="100%" />
+</p>
+
+## Observability
+
+Each investigation exposes an `observability_summary` with planner, answer and total latency; tool execution/error/retry counts; LLM call count; model name; prompt/completion token counts when available; prompt versions; and validation/recovery state.
+
+<p align="center">
+  <img src="docs/screenshots/06_observability_llm_runtime.png" alt="Local LLM runtime observability" width="100%" />
+</p>
+
+Prometheus and OpenTelemetry provide the platform-level metrics/traces used by Grafana and Jaeger. See [`docs/observability.md`](docs/observability.md).
+
+## Verified engineering proof
+
+Latest verified local validation includes:
+
+| Check | Verified result |
+|---|---:|
+| pytest | **40 passed** |
+| Ruff | **pass** |
+| deterministic planner-policy cases | **15 / 15** |
+| planner-policy accuracy | **1.0** |
+| live GitHub Status source | **pass** |
+| FastAPI smoke test | **pass** |
+| Streamlit smoke test | **pass** |
+| MCP smoke test | **pass** |
+| Docker verification | **pass** |
+| local kind/Kubernetes deployment | **deployment pass** |
+
+Machine-level verification output is committed in [`reports/final_validation.json`](reports/final_validation.json), and the deterministic policy evaluation is committed in [`reports/policy_evaluation.json`](reports/policy_evaluation.json).
+
+<p align="center">
+  <img src="docs/screenshots/08_validation_results.png" alt="AgentOps Local validation results" width="100%" />
+</p>
+
+## Live and deterministic tools
+
+### Primary live tools
+
+- `status` — current GitHub health, components and unresolved incidents
+- `incidents` — recent GitHub incidents, timestamps and official updates
+- `incident_metrics` — runtime-derived counts, severity and resolution-time metrics
+
+Primary source:
 
 - `https://www.githubstatus.com/api/v2/summary.json`
 - `https://www.githubstatus.com/api/v2/incidents.json`
 
-Local checkout metrics/logs/orders remain only as deterministic regression fixtures. They are explicitly separated from the live portfolio path.
+### Local deterministic fixtures
 
-![Architecture](docs/screenshots/architecture-overview.png)
+- `metrics` — checkout metrics fixture
+- `sql` — parameterized read-only SQLite fixture queries
+- `logs` — deterministic checkout incident-log search
+- `knowledge` — local payment incident runbook
 
-## What is implemented
+These fixtures exist for deterministic tests, failure simulation, grounding regression and tool-selection evaluation. They are **not** presented as live production evidence.
 
-### Agent engineering
+## Key implementation areas
 
-- LangGraph state machine and multi-tool loop
-- Pydantic structured planner output
-- deterministic minimal-tool policy before LLM planning
-- safe structured tool registry and input validation
-- transient tool retries + deterministic recovery/replan pass
-- read-only permission model with a future-write human-approval branch
-- source provenance (`source`, `source_url`, `fetched_at`)
-- grounded synthesis with deterministic validation
-- broader unsupported numeric/source claim checks
-- answer completeness checks
-- answer retry + deterministic evidence fallback
-- human-review flag when evidence/tool state remains unsafe
+| Area | Implementation |
+|---|---|
+| Agent orchestration | LangGraph state machine, structured planner, minimal tool policy, multi-step loop |
+| LLM | Local Ollama with `qwen2.5-coder:7b` |
+| Grounding | evidence-only synthesis, numeric/source/identifier checks, completeness validation |
+| Reliability | planner/tool retries, failed-tool handling, answer retry, deterministic fallback |
+| Safety | read-only allowlist, structured inputs, abuse guard, future-write approval branch |
+| Persistence | SQLite locally; PostgreSQL through Docker Compose |
+| Interfaces | FastAPI, Streamlit, MCP v2 |
+| Observability | local summary, Prometheus, OpenTelemetry, Grafana, Jaeger |
+| Delivery | pytest, Ruff, deterministic evaluation, GitHub Actions, Docker, kind/Kubernetes |
 
-### Real + local tools
+## Run locally
 
-- `status` — current GitHub service/component health
-- `incidents` — recent GitHub incidents and official updates
-- `incident_metrics` — runtime-derived public incident analytics
-- `sql` — parameterized read-only local fixture queries, filters, IDs, and counts
-- `logs` — deterministic local incident-log search
-- `metrics` — deterministic fixture metrics
-- `knowledge` — local runbook retrieval
+### Prerequisites
 
-### Production-style layers
+- Python 3.11+
+- Ollama
+- Docker Desktop only if you want the containerized/PostgreSQL/observability/Kubernetes paths
 
-- FastAPI structured request/response models
-- persisted investigations, tool traces, evaluation runs, and sessions
-- Streamlit portfolio UI with plan, evidence, trace, retries, validation, and observability
-- MCP Python SDK server/client + tool discovery + full-investigation trace demo
-- Ollama-native function-calling comparison implementation
-- Prometheus metrics
-- OpenTelemetry custom spans + FastAPI tracing
-- local Jaeger trace visualization
-- provisioned Grafana dashboard
-- PostgreSQL via Docker Compose
-- pytest + Ruff + deterministic offline evaluation
-- GitHub Actions tests/lint/policy evaluation + Docker build checks
-- kind/Minikube-ready Kubernetes manifests and demo automation
-
-## Verified real-data baseline
-
-A live run on 2026-09-22 verified the existing live-data core with:
-
-- `21 passed`
-- `All checks passed!`
-- GitHub Status source reachable
-- current status: `All Systems Operational`
-- latest incident correctly retrieved as `Incident with Pull Requests`
-- latest-incident plan: `incidents` only
-- `answer_valid=True`
-- `requires_human_review=False`
-
-![Live verification](docs/screenshots/live-verification.png)
-
-The final tracker-completion bundle adds further persistence, security, retry/recovery, observability, CI, Kubernetes, and portfolio tests/assets. Run `scripts/finalize.ps1` once on the target laptop to verify every machine-dependent integration in the final bundle.
-
-## Architecture
-
-```mermaid
-flowchart TD
-    U[User / Streamlit] --> A[FastAPI]
-    A --> G[LangGraph Agent]
-    G --> SG[Security Guard]
-    SG --> P[Deterministic Policy + LLM Planner]
-
-    P --> ST[Live Status]
-    P --> IN[Live Incidents]
-    P --> IM[Live Incident Metrics]
-    P --> SQL[Parameterized SQL]
-    P --> LG[Fixture Logs]
-    P --> KB[Runbook]
-
-    ST --> GH[GitHub Status API]
-    IN --> GH
-    IM --> GH
-
-    ST --> E[Evidence State]
-    IN --> E
-    IM --> E
-    SQL --> E
-    LG --> E
-    KB --> E
-
-    E --> S[Grounded Synthesis]
-    S --> V[Grounding + Completeness Validation]
-    V -->|retry| S
-    V -->|fallback| F[Deterministic Evidence Answer]
-    V --> R[Result]
-    F --> R
-
-    R --> DB[(SQLite / PostgreSQL)]
-    R --> OT[OpenTelemetry / Jaeger]
-    R --> PM[Prometheus / Grafana]
-```
-
-More detail: [`docs/architecture.md`](docs/architecture.md) and [`docs/agent-flow.md`](docs/agent-flow.md).
-
-## One-command final verification
-
-From PowerShell inside the project with `.venv` active:
+### Setup
 
 ```powershell
-.\scripts\finalize.ps1
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements-dev.txt
+Copy-Item .env.example .env
+ollama pull qwen2.5-coder:7b
 ```
 
-The finalizer runs the expanded tests/lint/offline policy evaluation, checks the real GitHub Status source, smoke-tests FastAPI and Streamlit, imports the MCP server, builds Docker images when Docker is installed, validates Kubernetes manifests when `kubectl`/kind are installed, and writes:
-
-```text
-reports/final_validation.json
-```
-
-## Manual commands
-
-### Core quality
-
-```powershell
-pytest -q
-ruff check backend tests frontend
-python -m backend.evaluation.run_policy_evaluation
-```
-
-### Real source
-
-```powershell
-python -m backend.evaluation.run_live_source_check
-```
-
-### Full local LLM agent
-
-```powershell
-python -m backend.agent.graph
-```
-
-### FastAPI
+### Start the API
 
 ```powershell
 uvicorn backend.main:app --reload
 ```
 
-Open `http://127.0.0.1:8000/docs`.
+FastAPI docs: `http://127.0.0.1:8000/docs`
 
-Key endpoints:
+### Start the Streamlit UI
 
-- `POST /investigate`
-- `GET /public-status`
-- `GET /public-incidents`
-- `GET /public-incident-metrics`
-- `GET /source-health`
-- `GET /investigations`
-- `GET /sessions/{session_id}`
-- `GET /evaluations`
-- `GET /metrics`
-- `GET /health`
-
-### Streamlit
+In another terminal:
 
 ```powershell
 streamlit run frontend/app.py
 ```
 
-Open `http://localhost:8501`.
+UI: `http://localhost:8501`
 
-### MCP
-
-```powershell
-$env:MCP_TRANSPORT="streamable-http"
-$env:MCP_PORT="8001"
-python -m backend.mcp_server
-```
-
-Then in another terminal:
-
-```powershell
-python -m backend.mcp_client_demo
-```
-
-### Native Ollama function-calling comparison
-
-```powershell
-python -m backend.native_tool_calling
-```
-
-### Docker
+### Docker Compose
 
 ```powershell
 docker compose up --build
 ```
 
-Optional local observability (enables OTLP export from the backend to Jaeger):
+### Final local verification
 
 ```powershell
-$env:OTEL_EXPORTER_OTLP_ENDPOINT="http://jaeger:4317"; docker compose --profile observability up --build
+.\scripts\finalize.ps1
 ```
 
-Optional MCP container:
+The finalizer runs quality checks, deterministic policy evaluation, live-source verification, interface smoke tests and available local deployment checks.
 
-```powershell
-docker compose --profile mcp up --build
+## Repository map
+
+```text
+backend/
+  agent/               LangGraph state, planning, execution, synthesis, validation
+  tools/               GitHub Status tools + deterministic local fixtures
+  evaluation/          policy, live-source and full-agent evaluation
+  main.py              FastAPI application
+  mcp_server.py        MCP server
+  persistence.py       SQLite/PostgreSQL persistence
+  observability.py     Prometheus/OpenTelemetry instrumentation
+
+frontend/
+  app.py               Streamlit investigation UI
+
+observability/         Prometheus + Grafana configuration
+k8s/                   local Kubernetes manifests
+scripts/               final validation and kind demo automation
+tests/                 unit/regression/security/API/observability tests
+docs/                  architecture, evaluation, screenshots and static showcase
+reports/               committed validation/evaluation summaries
 ```
 
-Ports:
+## Documentation
 
-- FastAPI `8000`
-- Streamlit `8501`
-- MCP `8001`
-- Prometheus `9090`
-- Grafana `3000`
-- Jaeger `16686`
+- [Architecture](docs/architecture.md)
+- [Agent flow](docs/agent-flow.md)
+- [Evaluation](docs/evaluation.md)
+- [Failure and recovery](docs/failure-recovery.md)
+- [Observability](docs/observability.md)
+- [Security](docs/security.md)
+- [Kubernetes](docs/kubernetes.md)
+- [Demo scenarios](docs/demo.md)
+- [Limitations](docs/limitations.md)
+- [Future work](docs/future-work.md)
+- [Native Ollama tool-calling comparison](docs/native-tool-calling.md)
+- [Tracker completion matrix](docs/tracker-completion.md)
 
-### Kubernetes
+## Deliberate scope decisions
 
-```powershell
-.\scripts\k8s_demo.ps1
-```
+- **No paid API:** the main LLM path runs locally through Ollama.
+- **Read-only runtime:** no write-capable operational tool is currently enabled.
+- **No production-cloud claim:** Docker and Kubernetes are verified as local deployment paths.
+- **No unnecessary vector database:** `pgvector` is intentionally excluded because the current workflow has no vector-retrieval requirement.
+- **No unnecessary Redis layer:** Redis is intentionally excluded because there is no measured caching/concurrency requirement and caching would make live/evaluation behavior less transparent.
 
-See [`docs/kubernetes.md`](docs/kubernetes.md).
+## Project purpose
 
-## Observability
-
-Each result includes an `observability_summary` with:
-
-- investigation ID
-- planner/answer/total latency
-- tool execution/error/retry counts
-- average/max tool latency
-- LLM call count
-- model name(s)
-- prompt/completion token counts when Ollama reports them
-- prompt versions
-- recovery and validation state
-
-Prometheus and OpenTelemetry expose the same operational signals for Grafana/Jaeger. See [`docs/observability.md`](docs/observability.md).
-
-![Observability dashboard preview](docs/screenshots/observability-dashboard.png)
-
-## Evaluation strategy
-
-Offline CI stays deterministic and does **not** depend on GitHub Status or Ollama availability. Real-source checks are separate. The full local-LLM evaluation can persist reports when run locally.
-
-See [`docs/evaluation.md`](docs/evaluation.md).
-
-## Safety
-
-All enabled external-facing tools are read-only. Unknown tools are rejected. Tool inputs are centrally validated. Direct system/tool-policy bypass instructions are blocked by a narrow preflight guard. A human-approval branch exists for any future tool registered as `write`.
-
-See [`docs/security.md`](docs/security.md).
-
-## Cost and deliberate architecture decisions
-
-The portfolio path uses no paid API. Ollama, LangGraph, FastAPI, MCP, PostgreSQL, Prometheus, Grafana, Jaeger/OpenTelemetry, Streamlit, Docker, and kind are local/open-source components.
-
-`pgvector` and Redis are intentionally **not** added because the current system has no vector-retrieval or caching requirement. Adding them only for keywords would make the architecture less credible. Their applicability was evaluated and documented in [`docs/future-work.md`](docs/future-work.md).
-
-## Portfolio material
-
-- Demo scenarios: [`docs/demo.md`](docs/demo.md)
-- Failure/recovery: [`docs/failure-recovery.md`](docs/failure-recovery.md)
-- Limitations: [`docs/limitations.md`](docs/limitations.md)
-- Future work: [`docs/future-work.md`](docs/future-work.md)
-- Resume bullets: [`docs/resume-bullets.md`](docs/resume-bullets.md)
-- Native tool-calling comparison: [`docs/native-tool-calling.md`](docs/native-tool-calling.md)
-- Tracker completion matrix: [`docs/tracker-completion.md`](docs/tracker-completion.md)
-
-## Resume-ready summary
-
-> Built a local-first LangGraph incident-investigation agent that ingests real public GitHub Status incidents and component health at runtime, computes incident analytics, plans minimal read-only tool calls, retries/recoveries transient failures, validates grounded and complete answers, records source/tool/LLM traces, persists investigations and evaluations, and ships through FastAPI, Streamlit, MCP, PostgreSQL, Prometheus/OpenTelemetry, Docker Compose, CI, and local Kubernetes — without paid APIs.
+AgentOps Local was built to demonstrate practical agent engineering beyond a chat interface: **real evidence retrieval, controlled tool use, transparent execution traces, grounded answer generation, deterministic validation, observability, persistence and deployable system boundaries** in one local-first project.
